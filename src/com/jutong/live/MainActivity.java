@@ -1,9 +1,12 @@
 package com.jutong.live;
 
-import android.annotation.TargetApi;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.hardware.Camera.CameraInfo;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -16,11 +19,14 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.myrtmp.R;
+import com.jutong.live.actilive.Actilive;
 
-public class MainActivity extends Activity implements OnClickListener,
+@SuppressLint("CutPasteId") public class MainActivity extends Activity implements OnClickListener,
 		Callback, LiveStateChangeListener {
-
-	private Button button01;
+	
+	private Actilive actilive = new Actilive();
+	JSONArray mBalls;
+	private Button button01,mBtnTag;
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mSurfaceHolder;
 	private boolean isStart;
@@ -49,6 +55,22 @@ public class MainActivity extends Activity implements OnClickListener,
 				Toast.makeText(MainActivity.this, "流媒体服务器/网络等问题", 0).show();
 				livePusher.stopPusher();
 				break;
+			// startActilive 成功
+			case 10001:
+				mBalls= (JSONArray) msg.obj;
+				//Log.e("fangfang", balls.toString());
+				Log.e("fangfang", "============ 10001");
+				try {
+					for ( int i=0; i<mBalls.length(); i++ ) {
+						JSONObject ball = (JSONObject) mBalls.get(i);
+						Log.i("fangfang", ball.optString("title"));
+					}
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				//
+				break;
 			}
 			button01.setText("推流");
 			isStart = false;
@@ -61,6 +83,15 @@ public class MainActivity extends Activity implements OnClickListener,
 		setContentView(R.layout.activity_main);
 		button01 = (Button) findViewById(R.id.button_first);
 		button01.setOnClickListener(this);
+		mBtnTag=(Button) findViewById(R.id.btn);
+		mBtnTag.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				actilive.CreateTag(0, 0.1, 0.1, 0.1, 0.1);
+			}
+		});
 		findViewById(R.id.button_take).setOnClickListener(
 				new OnClickListener() {
 
@@ -77,8 +108,10 @@ public class MainActivity extends Activity implements OnClickListener,
 		livePusher.setLiveStateChangeListener(this);
 		livePusher.prepare(mSurfaceHolder);
 
+		// actilive
+		actilive.StartActilive(mHandler);
+		
 	}
-
 	// @Override
 	// public void onRequestPermissionsResult(int requestCode,
 	// String[] permissions, int[] grantResults) {
@@ -100,6 +133,7 @@ public class MainActivity extends Activity implements OnClickListener,
 		} else {
 			button01.setText("停止");
 			isStart = true;
+			mBtnTag.setVisibility(View.VISIBLE);
 			livePusher.startPusher("rtmp://video-center.alivecdn.com/app-name/live-m?vhost=live.videojj.com");// TODO: 设置流媒体服务器地址
 
 		}
